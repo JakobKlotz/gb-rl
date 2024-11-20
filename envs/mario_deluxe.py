@@ -132,7 +132,7 @@ class MarioDeluxe(gym.Env):
 
         # Calculate progress reward
         if hasattr(self, 'last_x_pos'):
-            progress_reward = (player_x - self.last_x_pos) * 0.5  # Reward forward movement
+            progress_reward = (player_x - self.last_x_pos) * 2. # Reward forward movement
         self.last_x_pos = player_x
 
         # level completion reward
@@ -146,7 +146,7 @@ class MarioDeluxe(gym.Env):
         # Time management (time is stored in two bytes)
         time_high, time_low = self.pyboy.memory[0xC17D], self.pyboy.memory[0xC17E]
         timer = time_low * 256 + time_high  # -> time low is either 1 or 0
-        # time_timer = self.pyboy.memory[0xC180]
+
         if timer < 50:  # Low on time
             time_penalty = -10
 
@@ -161,7 +161,7 @@ class MarioDeluxe(gym.Env):
         elif player_pose in [1, 2, 6]:  # Walking poses
             movement_reward = 2
         elif player_pose == 4:  # Jumping
-            movement_reward = 3
+            movement_reward = 1.5
 
         # Calculate final reward
         total_reward = (
