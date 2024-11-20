@@ -78,12 +78,13 @@ class MarioDeluxe(gym.Env):
                 self.current_action = 0
                 self.action_duration = 0
 
-        # Consider disabling renderer when not needed to improve speed:
-        # self.pyboy.tick(1, False)
         self.pyboy.tick(30)
 
         is_dead = self.pyboy.memory[0xC1C1] == 3
-        if is_dead:
+        time_high, time_low = self.pyboy.memory[0xC17D], self.pyboy.memory[0xC17E]
+        timer = time_low * 256 + time_high  # -> time low is either 1 or 0
+
+        if is_dead or timer <= 15:
             done = True
             print("Game Over")
 
@@ -181,7 +182,7 @@ class MarioDeluxe(gym.Env):
 
     def reset(self, **kwargs):
         # start with Level 1-1
-        with open("level1-1.state", "rb") as f:
+        with open("state/level1-1.state", "rb") as f:
             self.pyboy.load_state(f)
 
         # self.pyboy.game_wrapper.reset_game()
