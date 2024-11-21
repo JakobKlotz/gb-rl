@@ -194,7 +194,7 @@ class MarioDeluxe(gym.Env):
         # Clip reward to prevent extreme values
         return np.clip(total_reward, -25, 25)
 
-    def reset(self):
+    def reset(self, **kwargs):  # noqa: ARG002
         # start with Level 1-1
         with Path("state/level1-1.state").open("rb") as f:
             self.pyboy.load_state(f)
