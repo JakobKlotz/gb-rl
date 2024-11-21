@@ -17,11 +17,13 @@ class MarioDeluxe(gym.Env):
             (32, 32) if policy == "MlpPolicy" else (144, 160, 4)
         )
         self.actions = [
-            "",
-            "a",
-            "b",
-            "left",
-            "right",
+            ("", ),
+            ("right", ),
+            ("right", "a"),
+            ("right", "b"),
+            ("right", "a", "b"),
+            ("a", ),
+            ("left", ),
         ]
         self._fitness = 0
         self._previous_fitness = 0
@@ -55,30 +57,22 @@ class MarioDeluxe(gym.Env):
         )
 
         # Move the agent
-        # Handle multi-frame button press
-        if action == 0:  # No action
-            # pass
-            self.current_action = 0
-            self.action_duration = 0
-        elif action != self.current_action:
-            if self.current_action != 0:
-                # New action, reset duration and press button
-                self.pyboy.button_release(self.actions[self.current_action])
+        if self.previous_action != 0:
+            previous_buttons = self.actions[self.previous_action]
+            # release buttons which were in previous action
+            for button in previous_buttons:
+                # print("releasing button", button)
+                self.pyboy.button_release(button)
+        if action != 0:
+            # press buttons for current action
+            current_buttons = self.actions[action]
+            for button in current_buttons:
+                self.pyboy.button_press(button)
 
-            self.current_action = action
-            self.action_duration = 1
-            self.pyboy.button_press(self.actions[action])
-        else:
-            # Continue existing action
-            self.action_duration += 1
+        # save
+        self.previous_action = action
 
-            # Release button if max duration reached
-            if self.action_duration >= self.max_action_duration:
-                self.pyboy.button_release(self.actions[action])
-                self.current_action = 0
-                self.action_duration = 0
-
-        self.pyboy.tick(30)
+        self.pyboy.tick(count=1, render=self.render)
 
         is_dead = self.pyboy.memory[0xC1C1] == 3
         time_high, time_low = self.pyboy.memory[0xC17D], self.pyboy.memory[0xC17E]
@@ -132,8 +126,9 @@ class MarioDeluxe(gym.Env):
         death_penalty = 0
 
         # Calculate progress reward
-        if hasattr(self, 'last_x_pos'):
+        if self.last_x_pos is not None:
             progress_reward = (player_x - self.last_x_pos) * 2. # Reward forward movement
+
         self.last_x_pos = player_x
 
         # level completion reward
@@ -185,7 +180,7 @@ class MarioDeluxe(gym.Env):
         with open("state/level1-1.state", "rb") as f:
             self.pyboy.load_state(f)
 
-        # self.pyboy.game_wrapper.reset_game()
+        self.previous_action = 0
         self._fitness = 0
         self._previous_fitness = 0
         self.current_action = 0
