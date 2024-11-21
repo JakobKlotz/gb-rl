@@ -1,6 +1,7 @@
-import os
-from stable_baselines3.common.callbacks import BaseCallback
 from pathlib import Path
+
+from stable_baselines3.common.callbacks import BaseCallback
+
 
 class TrainAndLoggingCallback(BaseCallback):
     def __init__(self, check_freq, save_path, model_prefix: str, verbose=1):
@@ -15,6 +16,8 @@ class TrainAndLoggingCallback(BaseCallback):
 
     def _on_step(self):
         if self.n_calls % self.check_freq == 0:
-            model_path = Path(self.save_path) / f"{self.model_prefix}_{self.n_calls}"
+            model_path = (
+                Path(self.save_path) / f"{self.model_prefix}_{self.n_calls}"
+            )
             self.model.save(str(model_path))
         return True
