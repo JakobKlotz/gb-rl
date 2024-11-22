@@ -110,3 +110,5 @@ ENV/
 # folders
 data/
 dev/
+game/
+models/
