@@ -6,7 +6,7 @@ from pyboy.utils import WindowEvent
 
 from envs.mario_deluxe import MarioDeluxe
 
-rom_path = Path("Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc")
+rom_path = Path("game/Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc")
 pyboy = PyBoy(str(rom_path), sound=False)
 
 env = MarioDeluxe(pyboy, n_frames=1, render=True, debug=False)
