@@ -1,13 +1,25 @@
-# Adopted from https://github.com/Baekalfen/PyBoy/wiki/Using-PyBoy-with-Gym
+# Adapted from: https://github.com/Baekalfen/PyBoy/wiki/Using-PyBoy-with-Gym
 # Memory addresses: https://datacrystal.tcrf.net/wiki/Super_Mario_Bros._Deluxe/RAM_map
 from pathlib import Path
 
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
+from pyboy.utils import WindowEvent
 
 
 class MarioDeluxe(gym.Env):
+    """
+    Custom environment for Super Mario Bros. Deluxe
+
+    Args:
+        pyboy (PyBoy): PyBoy instance
+        policy (str): Policy to use, either 'MlpPolicy' or 'CnnPolicy'
+        debug (bool): If False, set the emulation speed to 0
+        render (bool): If True, render frames while training
+        n_frames (int): Number of frames to tick after a step was made
+    """
+
     def __init__(
         self,
         pyboy,
@@ -65,7 +77,20 @@ class MarioDeluxe(gym.Env):
 
         self.pyboy.game_wrapper.start_game()
 
-    def step(self, action):
+    @property
+    def is_dead(self) -> bool:
+        return self.pyboy.memory[0xC1C1] == 3
+
+    @property
+    def player_x(self) -> int:
+        x_one, x_two = self.pyboy.memory[0xC1CA], self.pyboy.memory[0xC1CB]
+        return x_one + x_two * 256
+
+    @property
+    def flag_reached(self) -> bool:
+        return self.pyboy.memory[0xC1C2] == 12
+
+    def step(self, action) -> tuple[np.ndarray, float | int, bool, bool, dict]:
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
@@ -89,7 +114,7 @@ class MarioDeluxe(gym.Env):
         self.pyboy.tick(count=self.n_frames, render=self.render)
 
         # done; if player is dead
-        done = self.pyboy.memory[0xC1C1] == 3
+        done = self.is_dead
 
         self._calculate_fitness()
         reward = self._fitness - self._previous_fitness
@@ -102,22 +127,18 @@ class MarioDeluxe(gym.Env):
         else:
             observation = self.pyboy.screen.ndarray[:, :, :3]
 
-        info = {}
+        info = {"x_position": self.player_x, "flag_reached": self.flag_reached}
         truncated = False
 
         return observation, reward, done, truncated, info
 
-    def _calculate_fitness(self):
+    def _calculate_fitness(self) -> None:
         self._previous_fitness = self._fitness
 
         # score the game
         self._fitness = self.calculate_reward()
 
-    def calculate_reward(self):
-        # get player x position
-        x_one, x_two = self.pyboy.memory[0xC1CA], self.pyboy.memory[0xC1CB]
-        player_x = x_one + x_two * 256
-
+    def calculate_reward(self) -> float | int:
         # get score (has size 3)
         digit_one, digit_two, digit_three = (
             self.pyboy.memory[0xC17A],
@@ -143,14 +164,13 @@ class MarioDeluxe(gym.Env):
         # Calculate progress reward
         if self.last_x_pos is not None:
             progress_reward = (
-                player_x - self.last_x_pos
+                self.player_x - self.last_x_pos
             ) * 2.0  # Reward forward movement
 
-        self.last_x_pos = player_x
+        self.last_x_pos = self.player_x
 
         # level completion reward
-        flag_reached = player_pose == 12
-        flag_reward = 25 if flag_reached else 0
+        flag_reward = 25 if self.flag_reached else 0
 
         # State-based rewards
         state_reward += powerup_state  # Reward power-up state;
@@ -194,7 +214,7 @@ class MarioDeluxe(gym.Env):
         # Clip reward to prevent extreme values
         return np.clip(total_reward, -25, 25)
 
-    def reset(self, **kwargs):  # noqa: ARG002
+    def reset(self, **kwargs) -> tuple[np.ndarray, dict]:  # noqa: ARG002
         # start with Level 1-1
         with Path("state/level1-1.state").open("rb") as f:
             self.pyboy.load_state(f)
@@ -214,8 +234,12 @@ class MarioDeluxe(gym.Env):
 
         return observation, info
 
-    def render(self, mode="human"):
+    def render(self, mode="human") -> None:
         pass
 
-    def close(self):
+    def close(self) -> None:
         self.pyboy.stop()
+
+    def toggle_record(self) -> None:
+        """Start or stop recording the screen."""
+        self.pyboy.send_input(WindowEvent.SCREEN_RECORDING_TOGGLE)
