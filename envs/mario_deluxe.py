@@ -16,6 +16,7 @@ class MarioDeluxe(gym.Env):
         pyboy (PyBoy): PyBoy instance
         policy (str): Policy to use, either 'MlpPolicy' or 'CnnPolicy'
         debug (bool): If False, set the emulation speed to 0
+            -> as fast as possible
         render (bool): If True, render frames while training
         n_frames (int): Number of frames to tick after a step was made
     """
@@ -90,6 +91,42 @@ class MarioDeluxe(gym.Env):
     def flag_reached(self) -> bool:
         return self.pyboy.memory[0xC1C2] == 12
 
+    @property
+    def game_score(self) -> int:
+        # get score (has size 3)
+        digit_one, digit_two, digit_three = (
+            self.pyboy.memory[0xC17A],
+            self.pyboy.memory[0xC17B],
+            self.pyboy.memory[0xC17C],
+        )
+
+        return digit_one * 10 + digit_two * 256 * 10 + digit_three
+
+    @property
+    def timer(self) -> int:
+        # Time management (time is stored in two bytes)
+        time_high, time_low = (
+            self.pyboy.memory[0xC17D],
+            self.pyboy.memory[0xC17E],  # -> time low is either 1 or 0
+        )
+        return time_low * 256 + time_high
+
+    @property
+    def powerup_state(self) -> int:
+        return self.pyboy.memory[0xC1C5]  # 0: small, 1: big, 2+: powered up
+
+    @property
+    def player_state(self) -> int:
+        return self.pyboy.memory[0xC1C1]
+
+    @property
+    def player_pose(self) -> int:
+        return self.pyboy.memory[0xC1C2]
+
+    @property
+    def level(self) -> int:
+        return self.pyboy.memory[0xC162]  # 0: Level 1-1, 1: Level 1-2, ...
+
     def step(self, action) -> tuple[np.ndarray, float | int, bool, bool, dict]:
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
@@ -127,7 +164,12 @@ class MarioDeluxe(gym.Env):
         else:
             observation = self.pyboy.screen.ndarray[:, :, :3]
 
-        info = {"x_position": self.player_x, "flag_reached": self.flag_reached}
+        info = {
+            "x_position": self.player_x,
+            "flag_reached": self.flag_reached,
+            "dead": self.is_dead,
+            "level_reached": self.level,
+        }
         truncated = False
 
         return observation, reward, done, truncated, info
@@ -139,60 +181,39 @@ class MarioDeluxe(gym.Env):
         self._fitness = self.calculate_reward()
 
     def calculate_reward(self) -> float | int:
-        # get score (has size 3)
-        digit_one, digit_two, digit_three = (
-            self.pyboy.memory[0xC17A],
-            self.pyboy.memory[0xC17B],
-            self.pyboy.memory[0xC17C],
-        )
-        score = digit_one * 10 + digit_two * 256 * 10 + digit_three
-        # score ranges in the hundreds to thousands
-        score /= 2_000
-
-        powerup_state = self.pyboy.memory[
-            0xC1C5
-        ]  # 0: small, 1: big, 2+: powered up
-        player_state = self.pyboy.memory[0xC1C1]  # 3: dead
-        player_pose = self.pyboy.memory[0xC1C2]
-
         # Initialize reward components
         progress_reward = 0
         state_reward = 0
         time_penalty = 0
         death_penalty = 0
 
-        # Calculate progress reward
-        if self.last_x_pos is not None:
-            progress_reward = (
-                self.player_x - self.last_x_pos
-            ) * 2.0  # Reward forward movement
+        # score ranges in the hundreds to thousands
+        score = self.game_score
+        score /= 2_000
 
+        # Calculate progress reward -> reward forward movement
+        if self.last_x_pos is not None:
+            progress_reward = (self.player_x - self.last_x_pos) * 2.0
         self.last_x_pos = self.player_x
 
         # level completion reward
         flag_reward = 25 if self.flag_reached else 0
 
         # State-based rewards
-        state_reward += powerup_state  # Reward power-up state;
+        state_reward += self.powerup_state  # Reward power-up state;
         # with simply its value (0, 1, 2) as reward
 
-        # Time management (time is stored in two bytes)
-        time_high, time_low = (
-            self.pyboy.memory[0xC17D],
-            self.pyboy.memory[0xC17E],
-        )
-        timer = time_low * 256 + time_high  # -> time low is either 1 or 0
-
-        # TODO implement a more sophisticated time penalty
-        if timer < 50:  # Low on time
+        # add a time penalty
+        if self.timer < 50:  # Low on time
             time_penalty = -10
 
         # Penalty for death
-        if player_state == 3:  # Dead state
+        if self.player_state == 3:  # Dead state
             death_penalty = -25
 
         # Movement rewards/penalties
         movement_reward = 0
+        player_pose = self.player_pose
         if player_pose == 0:  # Standing still
             movement_reward = -5
         elif player_pose in [1, 2, 6]:  # Walking poses
