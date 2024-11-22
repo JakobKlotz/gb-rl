@@ -1,7 +1,7 @@
 [project]
 name = "gb-rl"
 version = "0.1.0"
-description = "Super Mario Deluxe - Reinforcement Learning."
+description = "Super Mario Bros. Deluxe - Reinforcement Learning."
 readme = "README.md"
 authors = ["Jakob Klotz <jakob.klotz@mci.edu>"]
 requires-python = ">=3.12"
