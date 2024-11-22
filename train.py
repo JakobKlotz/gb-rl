@@ -6,15 +6,15 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecFrameStack
 from envs.callback import TrainAndLoggingCallback
 from envs.mario_deluxe import MarioDeluxe
 
-TIMESTEPS = 300_000
+TIMESTEPS, FRAMES = 1_000_000, 5
 POLICY = "MlpPolicy"
 
 pyboy = PyBoy(
     "Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc",
     sound=False,
-    window="null",
+    window="null",  # headless
 )
-env = MarioDeluxe(pyboy, policy=POLICY, render=False)
+env = MarioDeluxe(pyboy, policy=POLICY, render=False, n_frames=FRAMES)
 
 # gray scale the RGB image
 if POLICY == "CnnPolicy":
@@ -25,14 +25,15 @@ env = DummyVecEnv([lambda: env])
 env = VecFrameStack(env, n_stack=4, channels_order="last")
 
 agent = PPO(policy=POLICY, env=env, verbose=1, seed=42, n_steps=2048)
-# add a callback to save the model every 50k steps
+# add a callback to save the model every 100k steps
+path = f"models/{POLICY}-frames-{FRAMES}"
 agent.learn(
     progress_bar=True,
     total_timesteps=TIMESTEPS,
     callback=TrainAndLoggingCallback(
-        check_freq=50_000,
-        save_path="models",
+        check_freq=100_000,
+        save_path=path,
         model_prefix=f"{POLICY}-ppo_mario_deluxe",
     ),
 )
-agent.save(f"models/{POLICY}-ppo_mario_deluxe-{TIMESTEPS}")
+agent.save(f"{path}/ppo_mario_deluxe-final")
