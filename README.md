@@ -1,8 +1,10 @@
 # Super Mario Land Deluxe - Reinforcement learning
 
 <div align="center">
-  <img src="recordings/level1-1-cleared-realtime.gif" width="300" />
-  <figcaption>The agent clears level 1-1 </figcaption>
+  <figure>
+      <img src="recordings/level1-1-cleared-realtime.gif" width="300" />
+      <figcaption>The agent clears level 1-1</figcaption>
+  </figure>
 </div>
 
 Train an agent to play Super Mario Land Deluxe (Game Boy Color) 
@@ -106,6 +108,8 @@ uv run random_actions.py
 The script will save a recording like the one below:
 
 <div align="center">
-  <img src="recordings/random_actions.gif" width="300" />
-  <figcaption>Random actions</figcaption>
+  <figure>
+    <img src="recordings/random_actions.gif" width="300" />
+    <figcaption>Random actions</figcaption>
+  </figure>
 </div>
