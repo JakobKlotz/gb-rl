@@ -19,6 +19,7 @@ pyboy = PyBoy(
     "game/Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc",
     sound=False,
 )
+# Important: framerate of model and environment must match!
 env = MarioDeluxe(pyboy, policy=POLICY, render=True)
 if POLICY == "CnnPolicy":
     env = GrayScaleObservation(env, keep_dim=True)
