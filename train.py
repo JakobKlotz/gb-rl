@@ -10,7 +10,7 @@ TIMESTEPS, FRAMES = 1_000_000, 5
 POLICY = "MlpPolicy"
 
 pyboy = PyBoy(
-    "Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc",
+    "game/Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc",
     sound=False,
     window="null",  # headless
 )
