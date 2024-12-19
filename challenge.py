@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pyboy import PyBoy
 
-from challenge.controller import NESController
+from challenge import NESController
 
 controller = NESController()
 # Start polling at 60Hz (default)
