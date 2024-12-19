@@ -1,36 +1,57 @@
+# Challenge the AI (i.e., try to beat Level 1-1 under 36.18 seconds)
+# Press SELECT to start a game; SELECT and START to exit the script
+import time
 from pathlib import Path
 
 from pyboy import PyBoy
-from pyxboxcontroller import XboxController
 
-controller = XboxController(0)
+from challenge.controller import NESController
 
+controller = NESController()
+# Start polling at 60Hz (default)
+controller.start_polling()
+
+# initialize emulator
 rom = Path("game/Super Mario Bros. Deluxe (U) (V1.1) [C][!].gbc")
-
-pyboy = PyBoy(str(rom), sound=False, window="SDL2", scale=5)
+video = Path("ai-run.mp4")
+pyboy = PyBoy(str(rom), sound=False, window="SDL2", scale=2.5)
 quit_game = False
 
 while not quit_game:
-    # press a to start a game
-    if controller.state.a:
+    # press SELECT -> to start a game
+    if controller.select:
+        # TODO: startfile(video)
+
         # load initial state
         with Path("state/level1-1.state").open("rb") as f:
             pyboy.load_state(f)
 
         game_over = False
+
+        start_time = time.time()
         while not game_over and not quit_game:
-            quit_game = controller.state.start
+            # Press SELECT and START -> to exit the loop and quit the script
+            quit_game = controller.select and controller.start
 
             pyboy.tick()
+
             is_dead = pyboy.memory[0xC1C1] == 3
             on_map = pyboy.memory[0xC1C1] == 4
 
             game_over = is_dead or on_map
 
-            if game_over:
-                print("Mario is dead")
+            flag_reached = pyboy.memory[0xC1C2] == 12
 
-            if pyboy.memory[0xC1C2] == 12:
-                print("Flag reached")
+            # TODO: quit the video
+
+            if flag_reached:
+                end_time = time.time()
+                score = end_time - start_time
+
+                if score < 36.18:
+                    print("You beat the AI!")
+
+                print(f"Flag reached in {score} seconds")
+                game_over = True
 
 pyboy.stop()
