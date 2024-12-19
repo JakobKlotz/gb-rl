@@ -17,6 +17,13 @@ video = Path("ai-run.mp4")
 pyboy = PyBoy(str(rom), sound=False, window="SDL2", scale=2.5)
 quit_game = False
 
+# 'init' a leaderboard
+leaderboard = Path("leaderboard.txt")
+if not leaderboard.exists():
+    with leaderboard.open("w") as f:
+        f.write("")
+
+
 while not quit_game:
     # press SELECT -> to start a game
     if controller.select:
@@ -53,5 +60,8 @@ while not quit_game:
 
                 print(f"Flag reached in {seconds} seconds")
                 game_over = True
+
+                with leaderboard.open("a") as f:
+                    f.write(f"{seconds}\n")
 
 pyboy.stop()
