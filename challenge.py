@@ -46,12 +46,12 @@ while not quit_game:
 
             if flag_reached:
                 end_time = time.time()
-                score = end_time - start_time
+                seconds = end_time - start_time
 
-                if score < 36.18:
+                if seconds < 43.4:
                     print("You beat the AI!")
 
-                print(f"Flag reached in {score} seconds")
+                print(f"Flag reached in {seconds} seconds")
                 game_over = True
 
 pyboy.stop()
