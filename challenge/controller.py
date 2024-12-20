@@ -8,7 +8,12 @@ class NESController:
     def __init__(self):
         """miadore NES Controller (USB)"""
         self.gamepad = hid.device()
-        self.gamepad.open(0x0079, 0x0011)
+
+        try:
+            self.gamepad.open(0x0079, 0x0011)
+        except OSError as err:
+            raise Exception("No NES controller found") from err
+
         self.gamepad.set_nonblocking(True)
 
         # Button states
