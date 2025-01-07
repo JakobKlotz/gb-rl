@@ -15,7 +15,7 @@ RESOLUTION = (160, 144)
 SCALE = 3
 
 
-class GameboyViewer:
+class MarioChallenge:
     def __init__(self, root):
         # resolution of video and emulator
         width, height = RESOLUTION
@@ -222,7 +222,7 @@ class GameboyViewer:
 
 def main():
     root = tk.Tk()
-    app = GameboyViewer(root)
+    app = MarioChallenge(root)
 
     app.init_controller()
     # Initialize emulator with ROM
