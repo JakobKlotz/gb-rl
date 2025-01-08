@@ -27,6 +27,7 @@ class MarioChallenge:
         self.height = height * SCALE
 
         self.root = root
+        self.root.attributes("-fullscreen", True)
         self.root.configure(background="black")
         self.root.title("MC(A)I Mario Challenge")
 
