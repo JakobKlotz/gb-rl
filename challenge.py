@@ -26,27 +26,49 @@ class MarioChallenge:
         self.height = height * SCALE
 
         self.root = root
+        self.root.configure(background="black")
         self.root.title("MC(A)I Mario Challenge")
 
         # Create a static text label at the top
         self.text_label = tk.Label(
-            root, text="Press SELECT to start a game", font=FONT
+            root,
+            text="Press SELECT to start a game",
+            font=FONT,
+            background="black",
+            foreground="white",
         )
         self.text_label.pack(fill=tk.X, padx=10, pady=5)
 
-        # Create main container
-        self.container = ttk.Frame(root)
+        # Create main container with dark theme
+        style = ttk.Style()
+        style.configure("Dark.TFrame", background="black")
+        style.configure(
+            "Dark.TLabelframe", background="black", foreground="white"
+        )
+        style.configure(
+            "Dark.TLabelframe.Label",
+            background="black",
+            foreground="white",
+            font=FONT,
+        )
+
+        self.container = ttk.Frame(root, style="Dark.TFrame")
         self.container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Create frames for emulator, video, and leaderboard
-        self.emu_frame = ttk.LabelFrame(self.container, text="Your game")
+        # Create frames for emulator, video, and leaderboard with dark theme
+        self.emu_frame = ttk.LabelFrame(
+            self.container, text="You!", style="Dark.TLabelframe"
+        )
+
         self.emu_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
-        self.video_frame = ttk.LabelFrame(self.container, text="The AI run")
+        self.video_frame = ttk.LabelFrame(
+            self.container, text="The AI", style="Dark.TLabelframe"
+        )
         self.video_frame.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
         self.leaderboard_frame = ttk.LabelFrame(
-            self.container, text="Leaderboard"
+            self.container, text="Leaderboard", style="Dark.TLabelframe"
         )
         self.leaderboard_frame.grid(
             row=0, column=2, padx=5, pady=5, sticky="nsew"
@@ -59,36 +81,51 @@ class MarioChallenge:
             2, weight=0
         )  # Smaller width for leaderboard
 
-        # Initialize emulator components
+        # Initialize emulator components with dark theme
         self.emu_canvas = tk.Canvas(
-            self.emu_frame, width=self.width, height=self.height
+            self.emu_frame,
+            width=self.width,
+            height=self.height,
+            background="black",
+            highlightbackground="black",
         )
         self.emu_canvas.pack(padx=0, pady=0)
 
-        self.control_frame = ttk.Frame(self.emu_frame)
+        self.control_frame = ttk.Frame(self.emu_frame, style="Dark.TFrame")
         self.control_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Initialize video components
+        # Initialize video components with dark theme
         self.video_canvas = tk.Canvas(
-            self.video_frame, width=self.width, height=self.height
+            self.video_frame,
+            width=self.width,
+            height=self.height,
+            background="black",
+            highlightbackground="black",
         )
         self.video_canvas.pack(padx=0, pady=0)
 
-        self.video_control_frame = ttk.Frame(self.video_frame)
+        self.video_control_frame = ttk.Frame(
+            self.video_frame, style="Dark.TFrame"
+        )
         self.video_control_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # Initialize leaderboard components
+        # Initialize leaderboard components with dark theme
         self.leaderboard_text = tk.Text(
             self.leaderboard_frame,
             width=20,
             height=12,
             font=SMALL_FONT,
             state="disabled",
+            background="black",
+            foreground="white",
+            insertbackground="white",  # Cursor color
         )
         self.leaderboard_text.pack(padx=5, pady=5)
 
-        # Create label for game status
-        self.status_label = tk.Label(root, text="", font=FONT)
+        # Create label for game status with dark theme
+        self.status_label = tk.Label(
+            root, text="", font=FONT, background="black", foreground="white"
+        )
         self.status_label.pack()
 
         # Initialize emulator and video state
