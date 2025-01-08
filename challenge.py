@@ -150,6 +150,62 @@ class MarioChallenge:
         # Load existing leaderboard
         self.load_leaderboard()
 
+        # Game over GIF
+        self.game_over_frames = []
+        self.current_frame = 0
+        self.game_over_animation = None
+        self.game_over_label = tk.Label(root)
+        self.game_over_label.pack()
+
+        # Load the game over GIF frames
+        self.load_game_over_gif()
+
+    def load_game_over_gif(self):
+        """Load all frames of the game over GIF"""
+        try:
+            gif_path = Path(
+                "challenge/assets/game-over.gif"
+            )  # Adjust path as needed
+            gif = Image.open(gif_path)
+
+            # Extract all frames from GIF
+            while True:
+                try:
+                    self.game_over_frames.append(
+                        ImageTk.PhotoImage(gif.copy())
+                    )
+                    gif.seek(gif.tell() + 1)
+                except EOFError:
+                    break
+        except Exception as e:
+            print(f"Error loading game over GIF: {e}")
+
+    def animate_game_over(self):
+        """Animate the game over GIF"""
+        if self.game_over_frames:
+            # Update the frame
+            self.game_over_label.configure(
+                image=self.game_over_frames[self.current_frame]
+            )
+
+            # Move to next frame
+            self.current_frame = (self.current_frame + 1) % len(
+                self.game_over_frames
+            )
+
+            # Schedule next frame update
+            self.game_over_animation = self.root.after(
+                150, self.animate_game_over
+            )  # Adjust timing as needed
+
+    def stop_game_over_animation(self):
+        """Stop the game over animation"""
+        if self.game_over_animation:
+            self.root.after_cancel(self.game_over_animation)
+            self.game_over_animation = None
+        self.game_over_label.configure(image="")
+        self.current_frame = 0
+
     def load_leaderboard(self):
         """Load leaderboard data from file"""
         try:
@@ -167,9 +223,9 @@ class MarioChallenge:
 
         self.leaderboard.append({"time": current_time, "date": timestamp})
 
-        # Sort and keep top 10
+        # Sort and keep top 5
         self.leaderboard.sort(key=itemgetter("time"))
-        self.leaderboard = self.leaderboard[:10]
+        self.leaderboard = self.leaderboard[:5]
 
         # Save to file
         with Path("leaderboard.json").open("w") as f:
@@ -182,7 +238,7 @@ class MarioChallenge:
         self.leaderboard_text.config(state="normal")
         self.leaderboard_text.delete(1.0, tk.END)
 
-        header = "Top Runs:\n" + "-" * 18 + "\n"
+        header = "Top 5 Runs:\n" + "-" * 18 + "\n"
         self.leaderboard_text.insert(tk.END, header)
 
         for i, entry in enumerate(self.leaderboard, 1):
@@ -222,13 +278,17 @@ class MarioChallenge:
 
             if self.game_over and not self.game_paused:
                 if self.elapsed_time < 51.7 and self.flag_reached:
-                    self.status_label.config(text="You beat the AI!")
+                    self.status_label.config(
+                        text=f"You beat the AI!\nYour time: "
+                        f"{round(self.elapsed_time, 2)}s"
+                    )
+                    self.stop_game_over_animation()
                 elif self.elapsed_time >= 51.7 and self.flag_reached:
                     self.status_label.config(text="You were too slow!")
+                    self.stop_game_over_animation()
                 else:
-                    self.status_label.config(
-                        text="Game over! Press SELECT to try again!"
-                    )
+                    self.status_label.config(text="")  # Clear the text
+                    self.animate_game_over()  # Start the animation
 
             if self.game_paused:
                 self.status_label.config(
@@ -258,6 +318,7 @@ class MarioChallenge:
 
     def run(self):
         if self.controller.select and not self.video_playing:
+            self.stop_game_over_animation()
             self.load_state()
             self.reset_video()
             self.video_playing = True
