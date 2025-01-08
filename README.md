@@ -8,6 +8,9 @@
   <img src="recordings/level1-1-cleared-realtime.gif" width="300" />
 </div>
 
+*Disclaimer: This project is for educational purposes only. 
+Super Mario Bros. Deluxe is a trademark of Nintendo.*
+
 ## Set-up
 
 Install dependencies with:
@@ -88,7 +91,7 @@ is stored.
 
 ### Record the agent's best run:
 
-To recreate the agent's best run and record it, run:
+To recreate the agent's best run and record it, execute:
 
 ```bash
 uv run record.py
