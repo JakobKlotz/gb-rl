@@ -32,13 +32,24 @@ class MarioChallenge:
 
         # Create a static text label at the top
         self.text_label = tk.Label(
-            root,
-            text="Press SELECT to start a game",
+            self.root,
+            text=f"Beat AI Mario\n{"-"*30}\nPress SELECT to start a game",
             font=FONT,
             background="black",
             foreground="white",
         )
         self.text_label.pack(fill=tk.X, padx=10, pady=5)
+
+        # Create label for educational purposes notice
+        self.educational_label = tk.Label(
+            self.root,
+            text="For educational purposes only. "
+            "Super Mario Bros. Deluxe © Nintendo",
+            font=("Cascadia Mono", 10),
+            background="black",
+            foreground="white",
+        )
+        self.educational_label.pack(fill=tk.X, anchor=tk.NE, padx=10, pady=5)
 
         # Create main container with dark theme
         style = ttk.Style()
@@ -92,9 +103,6 @@ class MarioChallenge:
         )
         self.emu_canvas.pack(padx=0, pady=0)
 
-        self.control_frame = ttk.Frame(self.emu_frame, style="Dark.TFrame")
-        self.control_frame.pack(fill=tk.X, padx=5, pady=5)
-
         # Initialize video components with dark theme
         self.video_canvas = tk.Canvas(
             self.video_frame,
@@ -104,11 +112,6 @@ class MarioChallenge:
             highlightbackground="black",
         )
         self.video_canvas.pack(padx=0, pady=0)
-
-        self.video_control_frame = ttk.Frame(
-            self.video_frame, style="Dark.TFrame"
-        )
-        self.video_control_frame.pack(fill=tk.X, padx=5, pady=5)
 
         # Initialize leaderboard components with dark theme
         self.leaderboard_text = tk.Text(
@@ -155,7 +158,7 @@ class MarioChallenge:
         self.animation_frames = {"game_over": [], "win": []}
         self.current_frame = 0
         self.current_animation = None
-        self.animation_label = tk.Label(root)
+        self.animation_label = tk.Label(root, background="black")
         self.animation_label.pack()
 
         # Load the GIF frames
