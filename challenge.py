@@ -109,20 +109,19 @@ class MarioChallenge:
             # Check game state
             self.check_game_state()
 
-            # TODO fix: if the flag is reached, the text changes in the next
-            # update to Game over!
             if self.game_over:
                 if self.elapsed_time < 43.4 and self.flag_reached:
                     self.status_label.config(text="You beat the AI!")
-                if self.elapsed_time >= 43.4 and self.flag_reached:
+                elif self.elapsed_time >= 43.4 and self.flag_reached:
                     self.status_label.config(text="You were too slow!")
                 else:
                     self.status_label.config(text="Game over!")
 
-            # Schedule next update
-            self.emulator_update_task = self.root.after(
-                16, self.update_emulator
-            )  # ~60 FPS
+            if not self.game_over:
+                # Schedule next update
+                self.emulator_update_task = self.root.after(
+                    16, self.update_emulator
+                )  # ~60 FPS
 
     def load_state(self):
         """Load a save state"""
@@ -216,8 +215,8 @@ class MarioChallenge:
                 self.game_over = True
                 self.flag_reached = flag_reached
 
-            # Calculate elapsed time
-            self.elapsed_time = time.time() - self.start_time
+                # Calculate elapsed time
+                self.elapsed_time = time.time() - self.start_time
 
 
 def main():
