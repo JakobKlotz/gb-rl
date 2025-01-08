@@ -1,6 +1,8 @@
 # Tkinter GUI to display the game and the AI run side by side
+import json
 import time
 import tkinter as tk
+from operator import itemgetter
 from pathlib import Path
 from tkinter import ttk
 
@@ -11,6 +13,7 @@ from pyboy import PyBoy
 from challenge import NESController
 
 FONT = ("Cascadia Mono", 18)
+SMALL_FONT = ("Cascadia Mono", 14)
 RESOLUTION = (160, 144)
 SCALE = 3
 
@@ -35,16 +38,26 @@ class MarioChallenge:
         self.container = ttk.Frame(root)
         self.container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Create frames for emulator and video
+        # Create frames for emulator, video, and leaderboard
         self.emu_frame = ttk.LabelFrame(self.container, text="Your game")
         self.emu_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
         self.video_frame = ttk.LabelFrame(self.container, text="The AI run")
         self.video_frame.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
+        self.leaderboard_frame = ttk.LabelFrame(
+            self.container, text="Leaderboard"
+        )
+        self.leaderboard_frame.grid(
+            row=0, column=2, padx=5, pady=5, sticky="nsew"
+        )
+
         # Configure grid weights
         self.container.grid_columnconfigure(0, weight=1)
         self.container.grid_columnconfigure(1, weight=1)
+        self.container.grid_columnconfigure(
+            2, weight=0
+        )  # Smaller width for leaderboard
 
         # Initialize emulator components
         self.emu_canvas = tk.Canvas(
@@ -64,6 +77,16 @@ class MarioChallenge:
         self.video_control_frame = ttk.Frame(self.video_frame)
         self.video_control_frame.pack(fill=tk.X, padx=5, pady=5)
 
+        # Initialize leaderboard components
+        self.leaderboard_text = tk.Text(
+            self.leaderboard_frame,
+            width=20,
+            height=12,
+            font=SMALL_FONT,
+            state="disabled",
+        )
+        self.leaderboard_text.pack(padx=5, pady=5)
+
         # Create label for game status
         self.status_label = tk.Label(root, text="", font=FONT)
         self.status_label.pack()
@@ -81,6 +104,52 @@ class MarioChallenge:
 
         self.emulator_update_task = None
         self.video_update_task = None
+
+        # Load existing leaderboard
+        self.load_leaderboard()
+
+    def load_leaderboard(self):
+        """Load leaderboard data from file"""
+        try:
+            with Path("leaderboard.json").open("r") as f:
+                self.leaderboard = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.leaderboard = []
+
+        self.update_leaderboard_display()
+
+    def write_time_to_file(self):
+        """Write current time to leaderboard file"""
+        current_time = round(self.elapsed_time, 2)
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        self.leaderboard.append({"time": current_time, "date": timestamp})
+
+        # Sort and keep top 10
+        self.leaderboard.sort(key=itemgetter("time"))
+        self.leaderboard = self.leaderboard[:10]
+
+        # Save to file
+        with Path("leaderboard.json").open("w") as f:
+            json.dump(self.leaderboard, f, indent=4)
+
+        self.update_leaderboard_display()
+
+    def update_leaderboard_display(self):
+        """Update the leaderboard display in the GUI"""
+        self.leaderboard_text.config(state="normal")
+        self.leaderboard_text.delete(1.0, tk.END)
+
+        header = "Top Runs:\n" + "-" * 18 + "\n"
+        self.leaderboard_text.insert(tk.END, header)
+
+        for i, entry in enumerate(self.leaderboard, 1):
+            time_str = f"{entry['time']:.2f}s"
+            date_str = entry["date"].split()[1]  # Just show the time, not date
+            line = f"{i}. {time_str}\n   Hour: {date_str}\n"
+            self.leaderboard_text.insert(tk.END, line)
+
+        self.leaderboard_text.config(state="disabled")
 
     def init_emulator(self, rom_path):
         """Initialize the PyBoy emulator with the specified ROM"""
@@ -217,6 +286,10 @@ class MarioChallenge:
 
                 # Calculate elapsed time
                 self.elapsed_time = time.time() - self.start_time
+
+                # If player won and beat the AI time, add to leaderboard
+                if self.elapsed_time < 51.7 and self.flag_reached:
+                    self.write_time_to_file()
 
 
 def main():
