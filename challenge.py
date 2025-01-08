@@ -105,6 +105,11 @@ class MarioChallenge:
         self.emulator_update_task = None
         self.video_update_task = None
 
+        # to detect if someone is in the menu
+        self.game_paused = False
+        self.previous_timer = None
+        # To ensure we don't trigger on momentary pauses
+        self.pause_check_counter = 0
         # Load existing leaderboard
         self.load_leaderboard()
 
@@ -178,13 +183,25 @@ class MarioChallenge:
             # Check game state
             self.check_game_state()
 
-            if self.game_over:
+            if self.game_over and not self.game_paused:
                 if self.elapsed_time < 51.7 and self.flag_reached:
                     self.status_label.config(text="You beat the AI!")
                 elif self.elapsed_time >= 51.7 and self.flag_reached:
                     self.status_label.config(text="You were too slow!")
                 else:
-                    self.status_label.config(text="Game over!")
+                    self.status_label.config(
+                        text="Game over! Press SELECT to try again!"
+                    )
+
+            if self.game_paused:
+                self.status_label.config(
+                    text="No pausing allowed! Press SELECT to try again!"
+                )
+                self.video_playing = False
+                self.game_over = True
+                # reset
+                self.game_paused = False
+                self.elapsed_time = 10_000
 
             if not self.game_over:
                 # Schedule next update
@@ -278,6 +295,26 @@ class MarioChallenge:
             is_dead = self.pyboy.memory[0xC1C1] == 3
             on_map = self.pyboy.memory[0xC1C1] == 4
             flag_reached = self.pyboy.memory[0xC1C2] == 12
+            fell_down = self.pyboy.memory[0xC1C1] == 17
+
+            # Check for paused state by monitoring timer
+            current_timer = self.pyboy.memory[0xC180]
+
+            if (
+                self.previous_timer is not None
+                and current_timer == self.previous_timer
+                and not fell_down
+            ):
+                self.pause_check_counter += 1
+                if (
+                    self.pause_check_counter > 10
+                ):  # Wait for multiple frames to confirm pause
+                    self.game_paused = True
+                    return
+            else:
+                self.pause_check_counter = 0
+
+            self.previous_timer = current_timer
 
             if is_dead or on_map or flag_reached:
                 self.video_playing = False
