@@ -16,6 +16,7 @@ FONT = ("Cascadia Mono", 18)
 SMALL_FONT = ("Cascadia Mono", 14)
 RESOLUTION = (160, 144)
 SCALE = 3
+AI_TIME = 43.4
 
 
 class MarioChallenge:
@@ -150,61 +151,74 @@ class MarioChallenge:
         # Load existing leaderboard
         self.load_leaderboard()
 
-        # Game over GIF
-        self.game_over_frames = []
+        # GIF Animation handling
+        self.animation_frames = {"game_over": [], "win": []}
         self.current_frame = 0
-        self.game_over_animation = None
-        self.game_over_label = tk.Label(root)
-        self.game_over_label.pack()
+        self.current_animation = None
+        self.animation_label = tk.Label(root)
+        self.animation_label.pack()
 
-        # Load the game over GIF frames
-        self.load_game_over_gif()
+        # Load the GIF frames
+        self.load_gif_frames("game-over.gif", "game_over")
+        self.load_gif_frames("win.gif", "win")
 
-    def load_game_over_gif(self):
-        """Load all frames of the game over GIF"""
+    def load_gif_frames(self, filename, animation_key):
+        """Load all frames of a GIF into the specified animation key"""
         try:
-            gif_path = Path(
-                "challenge/assets/game-over.gif"
-            )  # Adjust path as needed
+            gif_path = Path(f"challenge/assets/{filename}")
             gif = Image.open(gif_path)
 
             # Extract all frames from GIF
             while True:
                 try:
-                    self.game_over_frames.append(
+                    self.animation_frames[animation_key].append(
                         ImageTk.PhotoImage(gif.copy())
                     )
                     gif.seek(gif.tell() + 1)
                 except EOFError:
                     break
         except Exception as e:
-            print(f"Error loading game over GIF: {e}")
+            print(f"Error loading {filename}: {e}")
 
-    def animate_game_over(self):
-        """Animate the game over GIF"""
-        if self.game_over_frames:
+    def start_animation(self, animation_key, frame_duration=150):
+        """Start playing the specified animation"""
+        self.stop_animation()  # Stop any current animation
+        if self.animation_frames[animation_key]:
+            self.current_animation = animation_key
+            self.current_frame = 0
+            self.animate_frame(frame_duration)
+
+    def animate_frame(self, frame_duration=150):
+        """Animate the current frame of the active animation"""
+        if (
+            self.current_animation
+            and self.animation_frames[self.current_animation]
+        ):
             # Update the frame
-            self.game_over_label.configure(
-                image=self.game_over_frames[self.current_frame]
+            self.animation_label.configure(
+                image=self.animation_frames[self.current_animation][
+                    self.current_frame
+                ]
             )
 
             # Move to next frame
             self.current_frame = (self.current_frame + 1) % len(
-                self.game_over_frames
+                self.animation_frames[self.current_animation]
             )
 
             # Schedule next frame update
-            self.game_over_animation = self.root.after(
-                150, self.animate_game_over
-            )  # Adjust timing as needed
+            self.animation_task = self.root.after(
+                frame_duration, lambda: self.animate_frame(frame_duration)
+            )
 
-    def stop_game_over_animation(self):
-        """Stop the game over animation"""
-        if self.game_over_animation:
-            self.root.after_cancel(self.game_over_animation)
-            self.game_over_animation = None
-        self.game_over_label.configure(image="")
+    def stop_animation(self):
+        """Stop the current animation"""
+        if hasattr(self, "animation_task") and self.animation_task:
+            self.root.after_cancel(self.animation_task)
+            self.animation_task = None
+        self.animation_label.configure(image="")
         self.current_frame = 0
+        self.current_animation = None
 
     def load_leaderboard(self):
         """Load leaderboard data from file"""
@@ -276,20 +290,6 @@ class MarioChallenge:
             # Check game state
             self.check_game_state()
 
-            if self.game_over and not self.game_paused:
-                if self.elapsed_time < 51.7 and self.flag_reached:
-                    self.status_label.config(
-                        text=f"You beat the AI!\nYour time: "
-                        f"{round(self.elapsed_time, 2)}s"
-                    )
-                    self.stop_game_over_animation()
-                elif self.elapsed_time >= 51.7 and self.flag_reached:
-                    self.status_label.config(text="You were too slow!")
-                    self.stop_game_over_animation()
-                else:
-                    self.status_label.config(text="")  # Clear the text
-                    self.animate_game_over()  # Start the animation
-
             if self.game_paused:
                 self.status_label.config(
                     text="No pausing allowed! Press SELECT to try again!"
@@ -318,7 +318,7 @@ class MarioChallenge:
 
     def run(self):
         if self.controller.select and not self.video_playing:
-            self.stop_game_over_animation()
+            self.stop_animation()
             self.load_state()
             self.reset_video()
             self.video_playing = True
@@ -402,11 +402,10 @@ class MarioChallenge:
                 self.previous_timer is not None
                 and current_timer == self.previous_timer
                 and not fell_down
+                and not flag_reached
             ):
                 self.pause_check_counter += 1
-                if (
-                    self.pause_check_counter > 10
-                ):  # Wait for multiple frames to confirm pause
+                if self.pause_check_counter > 10:
                     self.game_paused = True
                     return
             else:
@@ -422,9 +421,21 @@ class MarioChallenge:
                 # Calculate elapsed time
                 self.elapsed_time = time.time() - self.start_time
 
-                # If player won and beat the AI time, add to leaderboard
-                if self.elapsed_time < 51.7 and self.flag_reached:
+                # Handle win/lose conditions
+                if self.elapsed_time < AI_TIME and self.flag_reached:
+                    self.status_label.config(
+                        text=f"You beat the AI!\n"
+                        f"Your time: {round(self.elapsed_time, 2)}s"
+                    )
+                    self.start_animation("win")
                     self.write_time_to_file()
+
+                elif self.elapsed_time >= AI_TIME and self.flag_reached:
+                    self.status_label.config(text="You were too slow!")
+                    self.stop_animation()
+                else:
+                    self.status_label.config(text="Press SELECT to try again!")
+                    self.start_animation("game_over")
 
 
 def main():
