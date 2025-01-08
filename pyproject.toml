@@ -17,11 +17,6 @@ dependencies = [
     "tqdm>=4.67.0",
 ]
 
-[project.optional-dependencies]
-play = [
-    "hidapi>=0.14.0.post4",
-]
-
 [tool.ruff]
 line-length = 79
 lint.select = [
