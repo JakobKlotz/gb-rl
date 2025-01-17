@@ -41,7 +41,8 @@ uv run train.py
 
 For convenience, the model is already available in the `models` directory.
 
-##### A little background
+<details>
+<summary>ℹ Environment details</summary>
 
 By default, the agent starts at the beginning of Level 1-1. After each
 step, the emulator is progressed by 5 frames. Which means the agent can 
@@ -72,12 +73,12 @@ Contrary, the agent is penalized if:
 The reward fo each step is clipped to the range -25 to 25 in order to
 prevent extreme values.
 
-In each time step, the agent has 4 frames at 'its disposal',
-namely the current frame plus the previous 3 frames. Ideally, this should
-enhance the agent's 'sense of motion'. [This](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/)
-blog post provides an excellent overview on pre-processing steps.
+> [This](https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/)
+> blog post provides an excellent overview on pre-processing steps.
 
-### Play the game:
+</details>
+
+### 🕹 Play the game:
 
 To run the model, execute:
 
@@ -85,11 +86,11 @@ To run the model, execute:
 uv run play.py
 ```
 
-... which will play 100 games. 
+... which will play 100 games.
 The best run (i.e., if the agent actually cleared the first level)
 is stored. 
 
-### Record the agent's best run:
+### 📹 Record the agent's best run:
 
 To recreate the agent's best run and record it, execute:
 
